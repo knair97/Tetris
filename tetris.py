@@ -7,30 +7,44 @@ import random
 
 from Tkinter import *
 
-root = Tk()
-root.geometry('200x400-1700+200') 
-canvas = Canvas(root, width=200, height=400) 
-canvas.pack() 
 SIZE = 20
+
+'''
+Coordinates:
+x0 = 2
+y0 = 2
+x1 = 201
+y1 = 375
+'''
 
 class Shapes:
     ''' The tetris board shapes. '''
     shapes = {"cyan" : [(1, 1), (2, 1), (3, 1), (4, 1)],
               "yellow" : [(1, 2), (1, 1), (2, 2), (2, 1)]}
-    def __init__(self):
+    def __init__(self, canvas):
         ''' Creates a random shape. '''
+        self.location = (0, 0)
         self.squares = []
         shape_color = random.choice((Shapes.shapes).keys())
         coords = Shapes.shapes[shape_color]
         for coord in coords:
             (x, y) = coord
-            square = canvas.create_rectangle(x * SIZE, y * SIZE, \
-                (x * SIZE) + SIZE, (y * SIZE) + SIZE, \
+            square = canvas.create_rectangle(40 + (x * SIZE), 40 + (y * SIZE), \
+                (x * SIZE) + SIZE + 40, (y * SIZE) + SIZE + 40, \
                 fill=shape_color, outline='black')
-
-    def move(self):
-        ''' Moves the shape down one block. '''
-        pass
+            self.squares.append(square)
+    def can_move_square(self, x, y, square, canvas):
+        # Check if the square has hit the boundary.
+        (x1, y1, x2, y2) = canvas.bbox(square)
+        if int(y2) <= 360:
+            return True
+        else:
+            return False
+    def move(self, x, y, canvas):
+        ''' Moves the shape given the x and y distance. '''
+        for square in self.squares:
+            if self.can_move_square(x, y, square, canvas):
+                canvas.move(square, x, y)
     def rotate(self):
         ''' Rotates the shape 90 degrees clockwise. '''
         pass
@@ -39,23 +53,32 @@ class Shapes:
 class Tetris_Game:
     ''' Play the game of tetris. '''
     def __init__(self):
-        ''' This is the constructor for the tetris board and will initialize an 
-        empty board. '''
+        ''' This is the constructor for the tetris board and will initialize a 
+        board with a shape. '''
 
-        # The board is represented as a list of lists. Empty boxes are marked 
-        # with '*' and filled boxes are marked with 'X'. 
-        # The board has 20 columns and 10 rows. The row is the first index in 
-        # the list and the column is the second index. 
-        row = ['*'] * 20
-        board = []
-        for i in range(10):
-            board.append(row[:])
-        self.board = board
-        self.score = 0
+        self.root = Tk()
+        self.root.title("Tetris")
+        self.root.geometry('200x400-1700+200') 
+        self.level = StringVar()
+        Label(self.root, textvariable=self.level, font=("Helvetica", 10, \
+            "bold")).pack()
+        self.level.set("Level : 1")
+        self.canvas = Canvas(self.root, width=200, height=400) 
+        self.canvas.pack() 
+        self.shape = Shapes(self.canvas)
 
-        # There are four possible kinds of blocks
-        self.moves = ['X X \nX X', 'X X \n  X X', '    X \nX X X', 'X\nX\nX\nX']
+        self.root.after(1000, self.timer)
+        r = self.canvas.create_rectangle(2, 2, 201, 375, fill='red', outline='black')
+        self.timer()
+        self.root.mainloop()
 
+        # TODO: Delete
+        
+    def timer(self):
+        ''' This function is called every few seconds and causes the shape to 
+        fall down. '''
+        self.shape.move(0, 20, self.canvas)
+        self.root.after(1000, self.timer)
     def random_move(self):
         return random.choice(self.moves)
     def make_move(self, move, piece):
@@ -140,8 +163,5 @@ class Tetris_Game:
             print '\n'
 
 
-
-tetris = Tetris_Game()
-shapes = Shapes()
-
-root.mainloop()
+if __name__ == '__main__':
+    tetris = Tetris_Game()
