@@ -16,12 +16,44 @@ y0 = 2
 x1 = 201
 y1 = 375
 '''
+class Squares:
+    ''' The squares that make up the tetris board shapes. '''
+    def __init__(self, board, canvas, color, x1, y1, x2, y2):
+        ''' Creates a square at the given location. '''
+        self.handle = canvas.create_rectangle(x1, y1, x2, y2, fill=color, \
+            outline='black')
+        self.location = (x1, y1)
+    def can_move_square(self, board, canvas, x, y):
+        ''' This function will check if the square can be moved to the desired
+        location by checking the state of the board. '''
+        (x1, y1, x2, y2) = canvas.bbox(self.handle)
+        new_x = x1 + x
+        new_y = y1 + y
+        print 'new_y : %d, new_x : %d' % (new_y / 20, new_x / 20)
+        can_move = True
+        if new_x > 182:
+            can_move = False
+        if new_y > 422:
+            can_move = False
+        if board[new_y / 20][new_x / 20] != '*':
+            can_move = False
+        if not can_move:
+            board[new_y / 20][new_x / 20] = self.handle
+        return can_move
+
+    def move_square(self, board, canvas, x, y):
+        ''' This function will move the square to the x and y coordinates. '''
+        canvas.move(self.handle, x, y)
+
+    def get_coords(self, canvas):
+        ''' This function will return the coordinates of the square. '''
+        return canvas.bbox(self.handle)
 
 class Shapes:
     ''' The tetris board shapes. '''
     shapes = {"cyan" : [(1, 1), (2, 1), (3, 1), (4, 1)],
               "yellow" : [(1, 2), (1, 1), (2, 2), (2, 1)]}
-    def __init__(self, canvas):
+    def __init__(self, canvas, board):
         ''' Creates a random shape. '''
         self.location = (0, 0)
         self.squares = []
@@ -29,22 +61,29 @@ class Shapes:
         coords = Shapes.shapes[shape_color]
         for coord in coords:
             (x, y) = coord
-            square = canvas.create_rectangle(40 + (x * SIZE), 40 + (y * SIZE), \
-                (x * SIZE) + SIZE + 40, (y * SIZE) + SIZE + 40, \
-                fill=shape_color, outline='black')
+            square = Squares(board, canvas, shape_color, 40 + (x * SIZE), \
+                40 + (y * SIZE), (x * SIZE) + SIZE + 40, (y * SIZE) + SIZE + 40)
             self.squares.append(square)
-    def can_move_square(self, x, y, square, canvas):
-        # Check if the square has hit the boundary.
-        (x1, y1, x2, y2) = canvas.bbox(square)
-        if int(y2) <= 360:
-            return True
-        else:
-            return False
-    def move(self, x, y, canvas):
-        ''' Moves the shape given the x and y distance. '''
+
+    def can_move_shape(self, x, y, canvas, board):
+        ''' This function will check if the current shape can be moved to the 
+        desired position. '''
+        can_move = True
         for square in self.squares:
-            if self.can_move_square(x, y, square, canvas):
-                canvas.move(square, x, y)
+            if not square.can_move_square(board, canvas, x, y):
+                can_move = False
+
+        return can_move
+
+    def move(self, x, y, canvas, board):
+        ''' Moves the shape given the x and y distance. '''
+        if self.can_move_shape(x, y, canvas, board):
+            for square in self.squares:
+                square.move_square(board, canvas, x, y)
+
+                (x1, y1, x2, y2) = square.get_coords(canvas)
+                (x0, y0) = self.location
+                self.location = (x0 + x, y0 + y)
     def rotate(self):
         ''' Rotates the shape 90 degrees clockwise. '''
         pass
@@ -56,28 +95,52 @@ class Tetris_Game:
         ''' This is the constructor for the tetris board and will initialize a 
         board with a shape. '''
 
+        '''
+        The width of the board is 20 units * 10. The height of the board is 22 
+        units. 
+        '''
+
         self.root = Tk()
         self.root.title("Tetris")
-        self.root.geometry('200x400-1700+200') 
+        self.root.geometry('201x467-1700+200')
         self.level = StringVar()
         Label(self.root, textvariable=self.level, font=("Helvetica", 10, \
             "bold")).pack()
         self.level.set("Level : 1")
-        self.canvas = Canvas(self.root, width=200, height=400) 
+        self.canvas = Canvas(self.root, width=201, height=467) 
         self.canvas.pack() 
-        self.shape = Shapes(self.canvas)
+
+        ''' Keep track of the state of the board by having a list of lists. 
+        This list will only be used to determine which spaces are used and which
+        spaces are free. '''
+        self.board = []
+        lst = []
+        for i in range(10):
+            lst.append('*')
+        for i in range(22):
+            self.board.append(lst)
+
+        self.shape = Shapes(self.canvas, self.board)
+
+        # r = self.canvas.create_rectangle(2, 2, 202, 442, fill='red', outline='black')
+
+
 
         self.root.after(1000, self.timer)
-        r = self.canvas.create_rectangle(2, 2, 201, 375, fill='red', outline='black')
-        self.timer()
+        #self.timer()
         self.root.mainloop()
 
         # TODO: Delete
+
         
     def timer(self):
         ''' This function is called every few seconds and causes the shape to 
-        fall down. '''
-        self.shape.move(0, 20, self.canvas)
+        fall down by 20 units. '''
+        if self.shape.can_move_shape(0, 20, self.canvas, self.board):
+            self.shape.move(0, 20, self.canvas, self.board)
+        else:
+            self.shape = Shapes(self.canvas, self.board)
+
         self.root.after(1000, self.timer)
     def random_move(self):
         return random.choice(self.moves)
