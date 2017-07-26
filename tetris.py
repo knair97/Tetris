@@ -29,16 +29,14 @@ class Squares:
         (x1, y1, x2, y2) = canvas.bbox(self.handle)
         new_x = x1 + x
         new_y = y1 + y
-        print 'new_y : %d, new_x : %d' % (new_y / 20, new_x / 20)
         can_move = True
         if new_x > 182:
             can_move = False
         if new_y > 422:
             can_move = False
-        if board[new_y / 20][new_x / 20] != '*':
+        if can_move == True and board[(new_y + y) / 20][(new_x + x) / 20] != '*':
             can_move = False
-        if not can_move:
-            board[new_y / 20][new_x / 20] = self.handle
+
         return can_move
 
     def move_square(self, board, canvas, x, y):
@@ -48,6 +46,10 @@ class Squares:
     def get_coords(self, canvas):
         ''' This function will return the coordinates of the square. '''
         return canvas.bbox(self.handle)
+
+    def get_handle(self, canvas):
+        ''' This function will return the handle of the square. '''
+        return self.handle
 
 class Shapes:
     ''' The tetris board shapes. '''
@@ -73,6 +75,7 @@ class Shapes:
             if not square.can_move_square(board, canvas, x, y):
                 can_move = False
 
+
         return can_move
 
     def move(self, x, y, canvas, board):
@@ -80,10 +83,13 @@ class Shapes:
         if self.can_move_shape(x, y, canvas, board):
             for square in self.squares:
                 square.move_square(board, canvas, x, y)
+            return False
 
+        else:            
+            for square in self.squares:
                 (x1, y1, x2, y2) = square.get_coords(canvas)
-                (x0, y0) = self.location
-                self.location = (x0 + x, y0 + y)
+                board[(y1 + y) / 20][(x1 + x) / 20] = square.get_handle(canvas)
+            return True
     def rotate(self):
         ''' Rotates the shape 90 degrees clockwise. '''
         pass
@@ -102,7 +108,8 @@ class Tetris_Game:
 
         self.root = Tk()
         self.root.title("Tetris")
-        self.root.geometry('201x467-1700+200')
+        self.root.geometry('201x467') #-1700+200')
+        self.root.bind('<Key>', self.key_handler)
         self.level = StringVar()
         Label(self.root, textvariable=self.level, font=("Helvetica", 10, \
             "bold")).pack()
@@ -118,7 +125,7 @@ class Tetris_Game:
         for i in range(10):
             lst.append('*')
         for i in range(22):
-            self.board.append(lst)
+            self.board.append(lst[:])
 
         self.shape = Shapes(self.canvas, self.board)
 
@@ -136,12 +143,15 @@ class Tetris_Game:
     def timer(self):
         ''' This function is called every few seconds and causes the shape to 
         fall down by 20 units. '''
-        if self.shape.can_move_shape(0, 20, self.canvas, self.board):
-            self.shape.move(0, 20, self.canvas, self.board)
-        else:
+        new_shape = self.shape.move(0, 20, self.canvas, self.board)
+        if new_shape:
             self.shape = Shapes(self.canvas, self.board)
 
         self.root.after(1000, self.timer)
+
+    def key_handler(self, event):
+        print 'Hello'
+        
     def random_move(self):
         return random.choice(self.moves)
     def make_move(self, move, piece):
