@@ -108,7 +108,7 @@ class Tetris_Game:
 
         self.root = Tk()
         self.root.title("Tetris")
-        self.root.geometry('201x467') #-1700+200')
+        self.root.geometry('201x467-1700+200')
         self.root.bind('<Key>', self.key_handler)
         self.level = StringVar()
         Label(self.root, textvariable=self.level, font=("Helvetica", 10, \
@@ -150,7 +150,11 @@ class Tetris_Game:
         self.root.after(1000, self.timer)
 
     def key_handler(self, event):
-        print 'Hello'
+        key = event.keysym
+        if key == 'Left':
+            self.shape.move(-20, 0, self.canvas, self.board)
+        elif key == 'Right':
+            self.shape.move(20, 0, self.canvas, self.board)
         
     def random_move(self):
         return random.choice(self.moves)
