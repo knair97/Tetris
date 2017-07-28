@@ -30,11 +30,11 @@ class Squares:
         new_x = x1 + x
         new_y = y1 + y
         can_move = True
-        if new_x > 182:
+        if new_x > 182 or new_x < 1:
             can_move = False
         if new_y > 422:
             can_move = False
-        if can_move == True and board[(new_y + y) / 20][(new_x + x) / 20] != '*':
+        if can_move == True and board[(new_y) / 20][(new_x) / 20] != '*':
             can_move = False
 
         return can_move
@@ -53,8 +53,8 @@ class Squares:
 
 class Shapes:
     ''' The tetris board shapes. '''
-    shapes = {"cyan" : [(1, 1), (2, 1), (3, 1), (4, 1)],
-              "yellow" : [(1, 2), (1, 1), (2, 2), (2, 1)]}
+    shapes = {"cyan" : [(0, 0), (1,0)]} #, (2,0), (3,0), (4,0), (5,0), (6,0), (7,0), (8,0), (9,0)]} #, (2, 0), (3, 0), (4, 0)],
+              # "yellow" : [(1, 0), (0, 0), (1, 1), (0, 1)]}
     def __init__(self, canvas, board):
         ''' Creates a random shape. '''
         self.location = (0, 0)
@@ -63,8 +63,8 @@ class Shapes:
         coords = Shapes.shapes[shape_color]
         for coord in coords:
             (x, y) = coord
-            square = Squares(board, canvas, shape_color, 40 + (x * SIZE), \
-                40 + (y * SIZE), (x * SIZE) + SIZE + 40, (y * SIZE) + SIZE + 40)
+            square = Squares(board, canvas, shape_color, 2 + (x * SIZE), \
+                2 + (y * SIZE), 2 + (x * SIZE) + SIZE, 2 + (y * SIZE) + SIZE)
             self.squares.append(square)
 
     def can_move_shape(self, x, y, canvas, board):
@@ -88,8 +88,11 @@ class Shapes:
         else:            
             for square in self.squares:
                 (x1, y1, x2, y2) = square.get_coords(canvas)
-                board[(y1 + y) / 20][(x1 + x) / 20] = square.get_handle(canvas)
+                board[(y1) / 20][(x1) / 20] = square.get_handle(canvas)
             return True
+    
+    def can_rotate_shape(self):
+        ''' Checks if the shape can be rotated 90 degrees clockwise. '''
     def rotate(self):
         ''' Rotates the shape 90 degrees clockwise. '''
         pass
@@ -131,10 +134,8 @@ class Tetris_Game:
 
         # r = self.canvas.create_rectangle(2, 2, 202, 442, fill='red', outline='black')
 
-
-
         self.root.after(1000, self.timer)
-        #self.timer()
+        # self.timer()
         self.root.mainloop()
 
         # TODO: Delete
@@ -146,8 +147,29 @@ class Tetris_Game:
         new_shape = self.shape.move(0, 20, self.canvas, self.board)
         if new_shape:
             self.shape = Shapes(self.canvas, self.board)
+        self.check_for_lines()
+        self.root.after(100, self.timer)
 
-        self.root.after(1000, self.timer)
+
+    def check_for_lines(self):
+        ''' This function will clear a line of the board if it is full. '''
+        for row in range(22):
+            if '*' not in self.board[row]:
+                self.clear_line(row)
+                for i in range(row):
+                    for j in range(10):
+                        if self.board[i][j] != '*':
+                            self.canvas.move(self.board[i][j], 0, 20)
+                            self.board[i + 1][j] = self.board[i][j]
+                            self.board[i][j] = '*'
+              
+
+    def clear_line(self, row):
+        ''' This function will clear all of the elements in the row that is 
+        passed in. '''
+        for i in range(10):
+            self.canvas.delete(self.board[row][i])
+            self.board[row][i] = '*'
 
     def key_handler(self, event):
         key = event.keysym
@@ -202,8 +224,6 @@ class Tetris_Game:
     def find_move(self):
         pass
     def solve(self, move):
-        pass
-    def clear_line(self):
         pass
     def get_score(self, board):
         ''' This function will return the score of the board state passed in. 
