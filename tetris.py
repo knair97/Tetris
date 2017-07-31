@@ -40,7 +40,7 @@ class Squares:
         return can_move
 
     def move_square(self, board, canvas, x, y):
-        ''' This function will move the square to the x and y coordinates. '''
+        ''' This function will move the square the x and y coordinates. '''
         canvas.move(self.handle, x, y)
 
     def get_coords(self, canvas):
@@ -53,9 +53,10 @@ class Squares:
 
 class Shapes:
     ''' The tetris board shapes. '''
-    shapes = {"cyan" : [(0, 0), (1,0), (2,0), (3,0)]}
-              #"yellow" : [(1, 0), (0, 0), (1, 1), (0, 1)],
-              #"blue" : [(0, 0), (1, 0), (2, 0), (2, 1)]}
+    shapes = {"cyan" : [(0, 0), (1, 0), (2,0), (3,0)], 
+              "yellow" : [(1, 0), (0, 0), (1, 1), (0, 1)],
+              "blue" : [(0, 0), (1, 0), (2, 0), (2, 1)],
+              "purple" : [(0, 0), (1, 0), (1, 1), (2, 0)]}
     def __init__(self, canvas, board):
         ''' Creates a random shape. '''
         self.location = (0, 0)
@@ -66,8 +67,8 @@ class Shapes:
         self.coords = coords
         for coord in coords:
             (x, y) = coord
-            square = Squares(board, canvas, shape_color, 2 + (x * SIZE) + 80, \
-                2 + (y * SIZE), 2 + (x * SIZE) + SIZE + 80, \
+            square = Squares(board, canvas, shape_color, 2 + (x * SIZE), \
+                2 + (y * SIZE), 2 + (x * SIZE) + SIZE, \
                 2 + (y * SIZE) + SIZE)
             self.squares.append(square)
 
@@ -95,18 +96,6 @@ class Shapes:
                 board[(y1) / 20][(x1) / 20] = square.get_handle(canvas)
             return True
     
-    def can_rotate_shape(self, canvas, board):
-        ''' Checks if the shape can be rotated 90 degrees clockwise. '''
-        if self.color == 'yellow':
-            return
-        pivot = self.squares[1]
-        (x_pivot, y_pivot) = pivot
-        for i in self.coords:
-            (x, y) = i
-            dx = x - x_pivot
-            dy = y - y_pivot
-            x_change = - dy - dx
-            y_change = dx - dy
 
     def rotate(self, canvas, board):
         ''' Rotates the shape 90 degrees clockwise. '''
@@ -114,13 +103,17 @@ class Shapes:
         pivot = self.coords[1]
         (x_pivot, y_pivot) = pivot
         for i in range(len(self.coords)):
-            (x, y) = self.coords[i]
-            dx = x - x_pivot
-            dy = y - y_pivot
-            x_change = - dy - dx
-            y_change = dx - dy
+            if i != 1:
+                (x, y) = self.coords[i]
+                dx = x - x_pivot
+                dy = y - y_pivot
+                x_change = - dy - dx
+                y_change = dx - dy
 
-            (self.squares[i]).move_square(board, canvas, x_change, y_change)
+                self.coords[i] = (x + x_change, y + y_change)
+
+                (self.squares[i]).move_square(board, canvas, x_change * 20, \
+                    y_change * 20)
 
 
 
@@ -162,7 +155,7 @@ class Tetris_Game:
 
         # r = self.canvas.create_rectangle(2, 2, 202, 442, fill='red', outline='black')
 
-        self.root.after(1000, self.timer)
+        self.root.after(500, self.timer)
         # self.timer()
         self.root.mainloop()
 
@@ -176,32 +169,34 @@ class Tetris_Game:
         if new_shape:
             self.shape = Shapes(self.canvas, self.board)
         self.check_for_lines()
-        self.root.after(1000, self.timer)
+        self.root.after(250, self.timer)
 
 
     def check_for_lines(self):
         ''' This function will clear a line of the board if it is full. '''
         lst = []
         squares = []
-        fix_squares = False
-        for row in range(22):
+        number_lines = 0
+        fix_squares = 0
+        for row in range(21, -1, -1):
             if '*' not in self.board[row]:
                 self.clear_line(row)
                 for i in range(row):
                     for j in range(10):
                         if self.board[i][j] != '*' and \
                         self.board[i][j] not in lst:
-                            self.canvas.move(self.board[i][j], 0, 20)
+                            self.canvas.move(self.board[i][j], 0, \
+                                20)
                             lst.append(self.board[i][j])
                             squares.append((self.board[i][j], i, j))
-                            fix_squares = True
+                            fix_squares += 1
         if fix_squares:
-            for row in range(22):
-                for column in range(10):
-                    self.board[row][column] = '*'
-            for square in squares:
-                (handle, i, j) = square
-                self.board[i + 1][j] = handle
+                for row in range(22):
+                    for column in range(10):
+                        self.board[row][column] = '*'
+                for square in squares:
+                    (handle, i, j) = square
+                    self.board[i + 1][j] = handle
               
 
     def clear_line(self, row):
@@ -222,47 +217,7 @@ class Tetris_Game:
         
     def random_move(self):
         return random.choice(self.moves)
-    def make_move(self, move, piece):
-        ''' The move argument passed in is an integer that represents the column
-        where the left most corner of the piece will be placed. '''
-        # If this is a square piece
-        if piece == 'X X \nX X':
-            valid_move = False
-            for i in range(9, -1, -1):
-                # Check if there is enough space for a square piece
-                if self.board[i][move] == '*' and \
-                self.board[i][move + 1] == '*' and \
-                self.board[i - 1][move] == '*' and \
-                self.board[i - 1][move + 1] == '*':
-                    # Add the square piece
-                    self.board[i][move] = 'X'
-                    self.board[i][move + 1] = 'X'
-                    self.board[i - 1][move] = 'X'
-                    self.board[i - 1][move + 1] = 'X'
-                    valid_move = True
-                    break
-
-        if piece == 'X X \n  X X':
-            valid_move = False
-            for i in range(8, -1, -1):
-                # Check if there is enough space for a z piece
-                if self.board[i][move] == '*' and \
-                self.board[i][move + 1] == '*' and \
-                self.board[i + 1][move + 1] == '*' and \
-                self.board[i + 1][move + 2] == '*':
-                    # Add the z piece
-                    self.board[i][move] = 'X'
-                    self.board[i][move + 1] = 'X'
-                    self.board[i + 1][move + 1] = 'X'
-                    self.board[i + 1][move + 2] = 'X'
-                    valid_move = True
-                    break
-        if piece == '    X \nX X X':
-            pass
-
-        if not valid_move:
-            print 'Not a valid move. Try again.'
-        return valid_move
+    
     def find_move(self):
         pass
     def solve(self, move):
